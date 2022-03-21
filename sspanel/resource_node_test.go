@@ -19,6 +19,11 @@ func TestAccResourceNode(t *testing.T) {
 						"sspanel_node.foo", "id", regexp.MustCompile("^[0-9]*")),
 				),
 			},
+			{
+				Config: testAccResourceNodeUpdateNodeIp,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("sspanel_node.foo", "node_ip", "1.1.1.1")),
+			},
 		},
 	})
 }
@@ -26,7 +31,17 @@ func TestAccResourceNode(t *testing.T) {
 const testAccResourceNode = `
 resource "sspanel_node" "foo" {
   name = "Test node"
-  server = "test.trojan.one;port=443"
+  server = "1.1.1.1.nip.io;port=443"
+  node_ip = "127.0.0.1"
+  sort = 14
+}
+`
+
+const testAccResourceNodeUpdateNodeIp = `
+resource "sspanel_node" "foo" {
+  name = "Test node"
+  server = "1.1.1.1.nip.io;port=443"
+  node_ip = "1.1.1.1"
   sort = 14
 }
 `

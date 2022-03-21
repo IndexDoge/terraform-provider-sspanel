@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/IndexDoge/terraform-provider-sspanel/sspanel/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -111,11 +112,16 @@ func resourceNode() *schema.Resource {
 	}
 }
 
-func resourceNodeCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
-	// use the meta value to retrieve your client from the provider configure method
+type createNodeResponse struct {
+	types.ApiResponse
+	NodeId int64 `json:"node_id"`
+}
+
+func generatePostNodeResourceData(d *schema.ResourceData) map[string]interface{} {
 	body := map[string]interface{}{
 		"name":                    d.Get("name"),
 		"server":                  d.Get("server"),
+		"node_ip":                 d.Get("node_ip"),
 		"mu_only":                 d.Get("mu_only"),
 		"rate":                    d.Get("rate"),
 		"info":                    d.Get("info"),
@@ -129,6 +135,13 @@ func resourceNodeCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		"bandwidthlimit_resetday": d.Get("bandwidth_reset_day"),
 	}
 
+	return body
+}
+
+func resourceNodeCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
+	// use the meta value to retrieve your client from the provider configure method
+	body := generatePostNodeResourceData(d)
+
 	client := meta.(*apiClient)
 	res, err := client.http.R().
 		SetBody(body).
@@ -138,21 +151,21 @@ func resourceNodeCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
-	responseJson := make(map[string]interface{}, 0)
+	responseJson := createNodeResponse{}
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if responseJson["ret"].(float64) != 1 {
-		return diag.Errorf("Create node failure: %s", responseJson["msg"].(string))
+	if responseJson.StatusCode != types.StatusOk {
+		return diag.Errorf("Create node failure: %s", responseJson.Msg)
 	}
 	tflog.Trace(ctx, "created a resource")
 
-	d.SetId(strconv.FormatInt(int64(responseJson["node_id"].(float64)), 10))
+	d.SetId(strconv.FormatInt(responseJson.NodeId, 10))
 
-	return
+	return resourceNodeRead(ctx, d, meta)
 }
 
 func resourceNodeRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -166,31 +179,57 @@ func resourceNodeRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	responseJson := make(map[string]interface{}, 0)
+	responseJson := types.ReadNodeInfoResponse{}
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
 
-	if responseJson["ret"].(float64) != 1 {
-		return diag.Errorf("Read node info failure: %s", responseJson["msg"].(string))
+	if responseJson.StatusCode != types.StatusOk {
+		return diag.Errorf("Read node info failure: %s", responseJson.Msg)
 	}
 
-	node := responseJson["node"].(map[string]interface{})
+	node := responseJson.Node
 
 	// Set Node Id
-	d.SetId(strconv.FormatInt(int64(node["id"].(float64)), 10))
+	d.SetId(strconv.FormatInt(node.Id, 10))
 
-	d.Set("server", node["server"])
-	d.Set("name", node["name"])
-	d.Set("status", node["status"])
-	
+	d.Set("name", node.Name)
+	d.Set("server", node.Server)
+	d.Set("mu_only", node.MuType)
+	d.Set("rate", node.TrafficRate)
+	d.Set("info", node.Info)
+	d.Set("type", node.Type)
+	d.Set("speedlimit", node.SpeedLimit)
+	d.Set("sort", node.Sort)
+	d.Set("node_ip", node.IP)
+	d.Set("status", node.Status)
+	d.Set("class", node.Class)
+	d.Set("bandwidth_limit", node.BandwidthLimit)
+	d.Set("bandwidth_reset_day", node.BandwidthResetDay)
+
 	return nil
 }
 
 func resourceNodeUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	// client := meta.(*apiClient)
+	body := generatePostNodeResourceData(d)
+	client := meta.(*apiClient)
+	res, err := client.http.R().
+		SetBody(body).
+		Put(fmt.Sprintf("node/%s", d.Id()))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	return diag.Errorf("not implemented")
+	responseJson := types.ApiResponse{}
+
+	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
+
+	if responseJson.StatusCode != types.StatusOk {
+		return diag.Errorf("Update node failure: %s", responseJson.Msg)
+	}
+
+	return resourceNodeRead(ctx, d, meta)
 }
 
 func resourceNodeDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -204,12 +243,12 @@ func resourceNodeDelete(ctx context.Context, d *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
-	responseJson := make(map[string]interface{}, 0)
+	responseJson := types.ApiResponse{}
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
 
-	if responseJson["ret"].(float64) != 1 {
-		return diag.Errorf("Delete node failure: %s", responseJson["msg"].(string))
+	if responseJson.StatusCode != types.StatusOk {
+		return diag.Errorf("Delete node failure: %s", responseJson.Msg)
 	}
 
 	return nil
