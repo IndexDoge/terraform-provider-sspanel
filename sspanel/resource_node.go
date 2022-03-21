@@ -176,12 +176,13 @@ func resourceNodeRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	node := responseJson["node"].(map[string]interface{})
 
-	d.SetId(node["id"].(string))
+	// Set Node Id
+	d.SetId(strconv.FormatInt(int64(node["id"].(float64)), 10))
+
 	d.Set("server", node["server"])
 	d.Set("name", node["name"])
 	d.Set("status", node["status"])
-	// TODO: impl read nodeInfo
-
+	
 	return nil
 }
 
