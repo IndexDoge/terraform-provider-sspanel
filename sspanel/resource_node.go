@@ -140,6 +140,7 @@ func generatePostNodeResourceData(d *schema.ResourceData) map[string]interface{}
 		"class":                   d.Get("class"),
 		"node_bandwidth_limit":    d.Get("bandwidth_limit"),
 		"bandwidthlimit_resetday": d.Get("bandwidth_reset_day"),
+		"custom_config":           d.Get("custom_config"),
 	}
 
 	return body
