@@ -190,6 +190,10 @@ func resourceNodeRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
 
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	if responseJson.StatusCode != types.StatusOk {
 		return diag.Errorf("Read node info failure: %s", responseJson.Msg)
 	}
@@ -233,6 +237,10 @@ func resourceNodeUpdate(ctx context.Context, d *schema.ResourceData, meta interf
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
 
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	if responseJson.StatusCode != types.StatusOk {
 		return diag.Errorf("Update node failure: %s", responseJson.Msg)
 	}
@@ -254,6 +262,10 @@ func resourceNodeDelete(ctx context.Context, d *schema.ResourceData, meta interf
 	responseJson := types.ApiResponse{}
 
 	err = json.NewDecoder(strings.NewReader(res.String())).Decode(&responseJson)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if responseJson.StatusCode != types.StatusOk {
 		return diag.Errorf("Delete node failure: %s", responseJson.Msg)
