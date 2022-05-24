@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/IndexDoge/terraform-provider-sspanel/sspanel/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
-	"strings"
 )
 
 func resourceNode() *schema.Resource {
@@ -108,6 +109,12 @@ func resourceNode() *schema.Resource {
 				Optional:    true,
 				Default:     1,
 			},
+			"custom_config": {
+				Description: "Node custom config",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "{}",
+			},
 		},
 	}
 }
@@ -205,6 +212,7 @@ func resourceNodeRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	d.Set("class", node.Class)
 	d.Set("bandwidth_limit", node.BandwidthLimit)
 	d.Set("bandwidth_reset_day", node.BandwidthResetDay)
+	d.Set("custom_config", node.CustomConfig)
 
 	return nil
 }
